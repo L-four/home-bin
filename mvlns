@@ -1,0 +1,4 @@
+old=$(readlink -f "$1")
+new=$(readlink -f "$2")
+mv "$old" "$new"
+ln "$new" "$old" -s
