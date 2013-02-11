@@ -1,0 +1,27 @@
+#!/usr/bin/python2
+
+import re
+import sys
+
+
+ips = dict()
+
+def myKey(d):
+  return d['num']
+
+with open(sys.argv[1]) as file:
+  for line in iter(file.readline, ''):
+    m = re.search('^(\d+\.\d+\.\d+\.\d+) \-', line)
+    if not m:
+      continue
+    if m.group(1) not in ips:
+      ips[m.group(1)] = 1
+    else:
+      ips[m.group(1)] = ips[m.group(1)] + 1
+
+slist = list()
+for ip in ips:
+  slist.append({'name':ip, 'num':ips[ip]})
+
+print sorted(slist, key=myKey)[-20:]
+

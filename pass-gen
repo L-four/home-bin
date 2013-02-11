@@ -1,0 +1,8 @@
+#!/usr/bin/perl
+
+use Crypt::GeneratePassword qw(chars);
+
+$word = chars(8,10);
+print $word;
+print "\n";
+exit
