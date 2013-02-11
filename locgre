@@ -1,0 +1,7 @@
+#!/bin/bash
+
+locate $1 | while read line; do
+  echo "## $line ##"
+  grep $2 "$line"
+done
+
