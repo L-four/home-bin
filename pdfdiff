@@ -1,0 +1,3 @@
+pdftotext "$1" /tmp/pdf1.txt
+pdftotext "$2" /tmp/pdf2.txt
+colordiff /tmp/pdf1.txt /tmp/pdf2.txt
