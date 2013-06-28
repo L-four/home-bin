@@ -1,0 +1,2 @@
+#!/bin/bash
+drush sql-dump | gzip > local.$(date +"%T-%d-%M-%Y").db.sql.gz
