@@ -1,0 +1,124 @@
+#!/usr/bin/env python2
+import httplib
+import json
+import os, sys, getopt, time
+
+class envManger:
+    """docstring for envManger"""
+    home = os.getenv("HOME", './')
+    conffile = os.path.join(home, '.ttrss.conf')
+    data = '' 
+    def __init__(self):
+        try:
+            with open(self.conffile, 'r') as f:
+                self.data = json.loads(f.read())
+        except Exception, e:        
+            if type(self.data) != dict:
+                self.data = {}
+    def get(self, var):
+        if (var in self.data):
+            return self.data[var]
+        else:
+            return False
+    def set(self, var, val):
+        self.data[var] = val
+        with open(self.conffile, 'w') as f:
+            f.write(json.dumps(self.data))
+
+
+
+
+class ttrssAPI:
+    session_id = ''
+    url = ''
+    env = envManger()
+    def __init__(self, url):
+        self.url = url
+        self.conn = httplib.HTTPConnection(self.url)
+        self.session_id = self.env.get('session_id')
+    def login(self, user, password, relog=False):
+        if (relog == False and self.check_vaild_session_id()):
+            print "Existing Session ID %s is valid" % self.session_id
+            return True
+        else:
+            if relog == True:
+                print "Forcing Login."
+            else:
+                print "Existing Session ID %s is invalid" % self.session_id
+        data = self.json_request({"op": "login", "user": user, "password": password})
+        try:
+            self.session_id = data['content']['session_id']
+        except Exception, e:
+            return False
+        else:
+            self.env.set('session_id', self.session_id)
+            return True
+    def check_vaild_session_id(self):
+        if (self.session_id != None):
+            data = self.json_request({"sid": self.session_id, "op": "getVersion"})
+            if 'error' in data['content'] and data['content']['error'] == "NOT_LOGGED_IN":
+                return False
+            else:
+                return True
+        else:
+            return False
+    def get_head_lines(self):
+        data = self.json_request({"sid": self.session_id, "op": "getHeadlines", "feed_id": "-3"})
+        self.env.set('last_head_line_request', time.time())
+        return data['content']
+    def json_request(self, post_data):
+        post_data = json.dumps(post_data)
+        self.conn.request("POST", "/api/", post_data)
+        res = self.conn.getresponse()
+        data = json.loads(res.read())
+        return data
+    def get_head_lines_new(self):
+        lts = self.env.get('last_head_line_request')
+        head_lines = self.get_head_lines()
+        new_head_lines = []
+        for head_line in head_lines:
+            if head_line['updated'] > lts:
+                new_head_lines.append(head_line)
+            else:
+                break
+        return new_head_lines
+
+
+
+def main(argv):
+    URL="rss.kyahrindlisbacher.com"
+    ttrss = ttrssAPI(URL)
+    ttrss.login(argv[0], argv[1])
+    head_lines = ttrss.get_head_lines()
+    if head_lines.__len__() > 0:
+        msg = ''
+        head_lines_by_feed = {}
+        for head_line in head_lines:
+            if head_line['feed_title'] not in head_lines_by_feed:
+                head_lines_by_feed[head_line['feed_title']] = []
+            head_lines_by_feed[head_line['feed_title']].append(head_line)
+
+        for feed in head_lines_by_feed:
+            msg += head_lines_by_feed[feed].__len__().__str__() + "  " + feed + "\n"
+        os.system('notify-send "' + head_lines.__len__().__str__() + ' New Rss articles.\n' + msg + '"')
+    return True
+
+# import friendly
+if __name__ == '__main__':
+    ret = main(sys.argv[1:])
+    if ret:
+        return 0
+    else:
+        return 1
+
+# '{"sid":"your-session-id","op":"getVersion"}
+# '{"op":"login","user":"you","password":"xxx"}'
+
+# r1 = conn.getresponse()
+# print r1.status, r1.reason
+# data1 = r1.read()
+# conn.request("GET", "/parrot.spam")
+# r2 = conn.getresponse()
+# print r2.status, r2.reason
+# data2 = r2.read()
+# conn.close()
