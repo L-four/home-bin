@@ -101,7 +101,6 @@ def main(argv):
         for feed in head_lines_by_feed:
             msg += head_lines_by_feed[feed].__len__().__str__() + "  " + feed + " | "
         os.system('notify-send "' + head_lines.__len__().__str__() + ' New RSS articles. | ' + msg + '"')
-        os.system('dwb rss.kyahrindlisbacher.com')
     else:
       print('No Fresh Articles.')
     return True
